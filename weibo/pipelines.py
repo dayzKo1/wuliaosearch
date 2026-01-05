@@ -129,8 +129,13 @@ class SQLitePipeline(object):
 
 class MyImagesPipeline(ImagesPipeline):
     def get_media_requests(self, item, info):
+        headers = {
+            'Referer': 'https://weibo.com',
+            'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+        }
         if len(item['weibo']['pics']) == 1:
             yield scrapy.Request(item['weibo']['pics'][0],
+                                 headers=headers,
                                  meta={
                                      'item': item,
                                      'sign': ''
@@ -139,15 +144,17 @@ class MyImagesPipeline(ImagesPipeline):
             sign = 0
             for image_url in item['weibo']['pics']:
                 yield scrapy.Request(image_url,
+                                     headers=headers,
                                      meta={
                                          'item': item,
                                          'sign': '-' + str(sign)
                                      })
                 sign += 1
 
-    def file_path(self, request, response=None, info=None):
+    def file_path(self, request, response=None, info=None, *, item=None):
         image_url = request.url
-        item = request.meta['item']
+        if item is None:
+            item = request.meta.get('item')
         sign = request.meta['sign']
         base_dir = '结果文件' + os.sep + item['keyword'] + os.sep + 'images'
         if not os.path.isdir(base_dir):
@@ -160,12 +167,18 @@ class MyImagesPipeline(ImagesPipeline):
 
 class MyVideoPipeline(FilesPipeline):
     def get_media_requests(self, item, info):
+        headers = {
+            'Referer': 'https://weibo.com',
+            'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+        }
         if item['weibo']['video_url']:
             yield scrapy.Request(item['weibo']['video_url'],
+                                 headers=headers,
                                  meta={'item': item})
 
-    def file_path(self, request, response=None, info=None):
-        item = request.meta['item']
+    def file_path(self, request, response=None, info=None, *, item=None):
+        if item is None:
+            item = request.meta.get('item')
         base_dir = '结果文件' + os.sep + item['keyword'] + os.sep + 'videos'
         if not os.path.isdir(base_dir):
             os.makedirs(base_dir)
